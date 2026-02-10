@@ -116,6 +116,38 @@ inline void printGroup(const std::vector<NodePtr>& elements)
 	std::cout << std::endl;
 }
 
+inline std::vector<size_t> jacobsthalInsertionOrder(size_t count)
+{
+	std::vector<size_t> order;
+	if (count == 0)
+		return order;
+	std::vector<size_t> jacob;
+	jacob.push_back(0);
+	jacob.push_back(1);
+	while (jacob.back() < count) {
+		size_t n = jacob.size();
+		jacob.push_back(jacob[n - 1] + 2 * jacob[n - 2]);
+	}
+	size_t prev = 1;
+	for (size_t k = 2; k < jacob.size(); ++k) {
+		size_t j = jacob[k];
+		if (j == 0)
+			continue;
+		size_t upper = (j > count) ? count : j;
+		for (size_t i = upper; i > prev; --i) {
+			order.push_back(i - 1);
+		}
+		prev = j;
+		if (prev >= count)
+			break;
+	}
+	if (order.empty()) {
+		for (size_t i = 0; i < count; ++i)
+			order.push_back(i);
+	}
+	return order;
+}
+
 inline std::vector<NodePtr> makeNodePairs(const std::vector<NodePtr>& elements)
 {
 	std::vector<NodePtr> return_vec;
@@ -282,8 +314,9 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 			}
 		}
 
-		for (unsigned long i = 0; i < pending_sequence.size(); ++i) {
-			NodePtr value = pending_sequence[i];
+		std::vector<size_t> order = jacobsthalInsertionOrder(pending_sequence.size());
+		for (unsigned long i = 0; i < order.size(); ++i) {
+			NodePtr value = pending_sequence[order[i]];
 			std::vector<NodePtr>::const_iterator pos = std::lower_bound(main_sequence.begin(), main_sequence.end(), value, [](const NodePtr& a, const NodePtr& b) {
 				return a->value < b->value;
 			});

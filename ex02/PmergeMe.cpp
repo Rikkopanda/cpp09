@@ -11,8 +11,6 @@
 PmergeMe::PmergeMe() {}
 PmergeMe::~PmergeMe() {}
 
-
-
 void PmergeMe::sort()
 {
 	auto elements = makeGroups(this->numbers);
