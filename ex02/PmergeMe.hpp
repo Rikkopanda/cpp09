@@ -166,7 +166,7 @@ public:
 	PmergeMe();
 	~PmergeMe();
 	void makeFirstPairs();
-	template<typename T> void sort();
+	void sort();
 	void add(int input);
 	void print();
 };
@@ -229,14 +229,14 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 	// if (groups[0])
 	if (groups.size() <= 2) {
 		printGroup(groups);
-		std::vector<NodePtr> groups;
+		std::vector<NodePtr> split_groups;
 		for (unsigned long i = 0; i < groups.size(); ++i) {
 			if (groups[i]->left)
-				groups.push_back(groups[i]->left);
+				split_groups.push_back(groups[i]->left);
 			if (groups[i]->right)
-				groups.push_back(groups[i]->right);
+				split_groups.push_back(groups[i]->right);
 		}
-		main_pending_insertion_sort(groups);
+		main_pending_insertion_sort(split_groups);
 		return;
 	}
 	else
@@ -298,39 +298,4 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 		}
 		main_pending_insertion_sort(main_sequence);
 	}
-	// else if (groups[1]->remaining || groups[0]->remaining)
-}
-
-template<typename T>
-void PmergeMe::sort()
-{
-	static_assert(std::is_same<T, int>::value, "PmergeMe stores int only");
-
-	// makeFirstPairs();
-	// std::vector<std::pair<T, T>> pairs = makePairs(this->numbers);
-
-	auto elements = makeGroups(this->numbers);
-
-	printGroupTree(elements);
-
-	main_pending_insertion_sort(elements);
-
-	// std::vector<int> main_sequence;
-	// std::vector<int> pending_sequence;
-
-	// make_main_and_pending_sequences(main_sequence, pending_sequence);
-
-	// std::cout << "vec contents: ";
-	// printVec(vec);
-	// sortPairsBySecond(vec);
-	// std::cout << "sorted vec contents: ";
-	// printVec(vec);
-
-	// sortInts(main_sequence);
-	// for (const auto& value : pending_sequence) {
-	// 	std::vector<int>::const_iterator pos = std::lower_bound(main_sequence.begin(), main_sequence.end(), value);
-	// 	main_sequence.insert(pos, value);
-	// }
-	// std::cout << "main sequence: ";
-	// printVec(main_sequence);
 }

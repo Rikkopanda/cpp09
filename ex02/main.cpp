@@ -28,6 +28,6 @@ int main (int args, char *argv[])
 		lijst.add(std::atoi(element.c_str()));
 	}
 	// lijst.print();
-	lijst.sort<int>();
+	lijst.sort();
 	return 0;
 }
