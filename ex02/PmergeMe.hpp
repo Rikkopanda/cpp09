@@ -229,52 +229,39 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 	// if (groups[0])
 	if (groups.size() <= 2) {
 		printGroup(groups);
-		std::vector<NodePtr> split_groups;
+		std::vector<NodePtr> groups;
 		for (unsigned long i = 0; i < groups.size(); ++i) {
 			if (groups[i]->left)
-				split_groups.push_back(groups[i]->left);
+				groups.push_back(groups[i]->left);
 			if (groups[i]->right)
-				split_groups.push_back(groups[i]->right);
+				groups.push_back(groups[i]->right);
 		}
-		main_pending_insertion_sort(split_groups);
+		main_pending_insertion_sort(groups);
 		return;
 	}
 	else
 	{
-		std::vector<NodePtr> split_groups;
-		// split_groups.push_back(groups[0]->left);
-		// split_groups.push_back(groups[0]->right);
-
-		for (unsigned long i = 0; i < groups.size(); i++) {
-			std::cout << "at i: " << i << " "  << groups[i] << std::endl;
-			// if (groups[i]->left)
-			// 	split_groups.push_back(groups[i]->left);
-			// if (groups[i]->right)
-			// 	split_groups.push_back(groups[i]->right);
-			split_groups.push_back(groups[i]);
-		}
-		printGroup(split_groups);
 		std::vector<NodePtr> main_sequence;
 		std::vector<NodePtr> pending_sequence;
 		std::vector<NodePtr> remaining_sequence;
 
-		if (split_groups[0]->left)
-			main_sequence.push_back(split_groups[0]->left);
-		if (split_groups[0]->right)
-			main_sequence.push_back(split_groups[0]->right);
-		for (unsigned long i = 1; i < split_groups.size(); ++i) {
-			if (!split_groups[i]->left || !split_groups[i]->right) {
-				std::cout << "remaining: " << split_groups[i]->value << std::endl;
-				if (split_groups[i]->left)
-					remaining_sequence.push_back(split_groups[i]->left);
+		if (groups[0]->left)
+			main_sequence.push_back(groups[0]->left);
+		if (groups[0]->right)
+			main_sequence.push_back(groups[0]->right);
+		for (unsigned long i = 1; i < groups.size(); ++i) {
+			if (!groups[i]->left || !groups[i]->right) {
+				std::cout << "remaining: " << groups[i]->value << std::endl;
+				if (groups[i]->left)
+					remaining_sequence.push_back(groups[i]->left);
 				else
-					remaining_sequence.push_back(split_groups[i]->right);
+					remaining_sequence.push_back(groups[i]->right);
 				continue;
 			}
-			if (split_groups[i]->left)
-				pending_sequence.push_back(split_groups[i]->left);
-			if (split_groups[i]->right)
-				main_sequence.push_back(split_groups[i]->right);
+			if (groups[i]->left)
+				pending_sequence.push_back(groups[i]->left);
+			if (groups[i]->right)
+				main_sequence.push_back(groups[i]->right);
 		}
 		std::cout << "main sequence: ";
 		printGroup(main_sequence);
@@ -294,7 +281,6 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 				main_sequence.push_back(remaining_sequence[i]);
 			}
 		}
-		// std::vector<NodePtr> insertion_result;
 
 		for (unsigned long i = 0; i < pending_sequence.size(); ++i) {
 			NodePtr value = pending_sequence[i];
@@ -303,7 +289,6 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 			});
 			main_sequence.insert(pos, value);
 		}
-
 
 		printGroup(main_sequence);
 		if (main_sequence[0]->is_leaf) {
