@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <deque>
 #include <cctype>
 #include <variant>
 #include <utility>
@@ -107,6 +108,16 @@ inline void printNode(const NodePtr& node)
 	std::cout << ")";
 }
 
+inline void printGroup(const std::deque<NodePtr>& elements)
+{
+	for (size_t i = 0; i < elements.size(); ++i) {
+		printNode(elements[i]);
+		if (i + 1 < elements.size())
+			std::cout << " | ";
+	}
+	std::cout << std::endl;
+}
+
 inline void printGroup(const std::vector<NodePtr>& elements)
 {
 	for (size_t i = 0; i < elements.size(); ++i) {
@@ -159,18 +170,18 @@ inline std::vector<NodePtr> makeNodePairs(const std::vector<NodePtr>& elements)
 }
 
 
-
-
 class PmergeMe
 {
 private:
 	std::vector<int> numbers;
+	std::deque<int> numbers_deque;
 public:
 	PmergeMe();
 	~PmergeMe();
 	void makeFirstPairs();
 	void sort();
 	void add(int input);
+	size_t size() const;
 	void print();
 };
 
@@ -197,7 +208,6 @@ inline std::vector<NodePtr> makeGroups(const std::vector<NodePtr>& elements)
 	printGroup(pair);
 
 	std::vector<NodePtr> groups = makeGroups(pair);
-	// printGroup(groups);
 
 	return groups;
 }
@@ -232,8 +242,8 @@ inline int jacobStallNum(int n) {
 	return jacobStallNum(n - 1) + jacobStallNum(n - 2);
 }
 
-inline std::vector<NodePtr> jacobStallOrder(const std::vector<NodePtr>& groups) {
-	std::vector<NodePtr> order;
+inline std::deque<NodePtr> jacobStallOrder(const std::deque<NodePtr>& groups) {
+	std::deque<NodePtr> order;
 
 	order.push_back(groups[0]);
 	size_t previous_index = 0;
@@ -256,10 +266,140 @@ inline std::vector<NodePtr> jacobStallOrder(const std::vector<NodePtr>& groups) 
 	return order;
 }
 
+
+inline std::vector<NodePtr> jacobStallOrder(const std::vector<NodePtr>& groups) {
+	std::vector<NodePtr> order;
+
+	if (groups[0] == NULL) {
+		std::cout << "NULL group at index " << 0 << std::endl;
+	}
+	else
+		order.push_back(groups[0]);
+	size_t previous_index = 0;
+	std::cout << "Jacob-Stall order: " << groups[0]->value << " at index 0" << std::endl;
+	for (size_t i = 1; i < groups.size(); ++i)
+	{
+		std::cout << "i = " << i << std::endl;
+		size_t index = jacobStallNum(i + 2) - 1; // -1 for 0-based index, + 2 because Jacob-Stall numbers start with J(0) = 1, J(1) = 1
+		while (index > previous_index) {
+			if (index < groups.size()) {
+				std::cout << "Jacob-Stall order: " << groups[index]->value << " at index " << index << std::endl;
+				if (groups[index] == NULL) {
+					std::cout << "NULL group at index " << index << std::endl;
+					continue;
+				}
+				order.push_back(groups[index]);
+			}
+			index--;
+		}
+		if (groups.size() == order.size())
+			break;
+		previous_index = jacobStallNum(i + 2) - 1; // update previous_index to the last index added
+	}
+	return order;
+}
+
+
+
+inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
+	printGroup(groups);
+
+	if (groups.size() <= 1) {
+		printGroup(groups);
+		std::deque<NodePtr> split_groups;
+		for (unsigned long i = 0; i < groups.size(); ++i) {
+			if (groups[i]->left)
+				split_groups.push_back(groups[i]->left);
+			if (groups[i]->right)
+				split_groups.push_back(groups[i]->right);
+		}
+		main_pending_insertion_sort(split_groups);
+		return;
+	}
+	else
+	{
+		std::deque<NodePtr> main_sequence;
+		std::deque<NodePtr> pending_sequence;
+		std::deque<NodePtr> remaining_sequence;
+
+		if (groups[0]->left)
+			main_sequence.push_back(groups[0]->left);
+		if (groups[0]->right)
+			main_sequence.push_back(groups[0]->right);
+		for (unsigned long i = 1; i < groups.size(); ++i) {
+			if (!groups[i]->left || !groups[i]->right) {
+				std::cout << "remaining: " << groups[i]->value << std::endl;
+				if (groups[i]->left)
+					remaining_sequence.push_back(groups[i]->left);
+				else
+					remaining_sequence.push_back(groups[i]->right);
+				continue;
+			}
+			if (groups[i]->left)
+				pending_sequence.push_back(groups[i]->left);
+			if (groups[i]->right)
+				main_sequence.push_back(groups[i]->right);
+		}
+		std::cout << "main sequence: ";
+		printGroup(main_sequence);
+		std::cout << "pending sequence: ";
+		printGroup(pending_sequence);
+		std::cout << "remaining sequence: ";
+		printGroup(remaining_sequence);
+		if (main_sequence[0]->is_leaf) {
+			for (unsigned long i = 0; i < remaining_sequence.size(); ++i) {
+				std::cout << "main sequence leaf: " << remaining_sequence[i]->value << std::endl;
+				pending_sequence.push_back(remaining_sequence[i]);
+			}
+		}
+		else
+		{
+			for (unsigned long i = 0; i < remaining_sequence.size(); ++i) {
+				main_sequence.push_back(remaining_sequence[i]);
+			}
+		}
+		
+		// Use Jacobsthal ordering only at leaf level
+		if (main_sequence[0]->is_leaf) {
+			std::deque<NodePtr> jacobStallOrderedList = jacobStallOrder(pending_sequence);
+			for (unsigned long i = 0; i < jacobStallOrderedList.size(); ++i) {
+				NodePtr value = jacobStallOrderedList[i];
+				NodePtr pairWith = value->PairWith;
+				auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
+				std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
+				auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
+					return a->value < b->value;
+				});
+				main_sequence.insert(pos, value);
+			}
+		}
+		else {
+			// At non-leaf level, just insert in order
+			for (unsigned long i = 0; i < pending_sequence.size(); ++i) {
+				NodePtr value = pending_sequence[i];
+				NodePtr pairWith = value->PairWith;
+				auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
+				auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
+					return a->value < b->value;
+				});
+				main_sequence.insert(pos, value);
+			}
+		}
+		printGroup(main_sequence);
+		if (main_sequence[0]->is_leaf) {
+			std::cout << "Final sorted sequence: ";
+			printGroup(main_sequence);
+			return;
+		}
+		main_pending_insertion_sort(main_sequence);
+	}
+}
+
+
+
 inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 	printGroup(groups);
-	// std::vector<NodePtr> main_sequence = groups[0]->left
-	// if (groups[0])
+
 	if (groups.size() <= 1) {
 		printGroup(groups);
 		std::vector<NodePtr> split_groups;
@@ -314,18 +454,32 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 				main_sequence.push_back(remaining_sequence[i]);
 			}
 		}
-		std::vector<NodePtr> jacobStallOrderedList = jacobStallOrder(pending_sequence);
 		
-		for (unsigned long i = 0; i < jacobStallOrderedList.size(); ++i) {
-			NodePtr value = jacobStallOrderedList[i];
-			// find PairWith in main_sequence and insert value in range before it
-			NodePtr pairWith = value->PairWith;
-			auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
-			std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
-			auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
-				return a->value < b->value;
-			});
-			main_sequence.insert(pos, value);
+		// Use Jacobsthal ordering only at leaf level
+		if (main_sequence[0]->is_leaf) {
+			std::vector<NodePtr> jacobStallOrderedList = jacobStallOrder(pending_sequence);
+			for (unsigned long i = 0; i < jacobStallOrderedList.size(); ++i) {
+				NodePtr value = jacobStallOrderedList[i];
+				NodePtr pairWith = value->PairWith;
+				auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
+				std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
+				auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
+					return a->value < b->value;
+				});
+				main_sequence.insert(pos, value);
+			}
+		}
+		else {
+			// At non-leaf level, just insert in order
+			for (unsigned long i = 0; i < pending_sequence.size(); ++i) {
+				NodePtr value = pending_sequence[i];
+				NodePtr pairWith = value->PairWith;
+				auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
+				auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
+					return a->value < b->value;
+				});
+				main_sequence.insert(pos, value);
+			}
 		}
 		printGroup(main_sequence);
 		if (main_sequence[0]->is_leaf) {

@@ -11,8 +11,6 @@
 PmergeMe::PmergeMe() {}
 PmergeMe::~PmergeMe() {}
 
-
-
 void PmergeMe::sort()
 {
 	auto elements = makeGroups(this->numbers);
@@ -26,6 +24,12 @@ void PmergeMe::sort()
 void PmergeMe::add(int input)
 {
 	this->numbers.push_back(input);
+	this->numbers_deque.push_back(input);
+};
+
+size_t PmergeMe::size() const
+{
+	return this->numbers.size();
 };
 
 void sortInts(std::vector<int>& v) {

@@ -28,6 +28,9 @@ int main (int args, char *argv[])
 		lijst.add(std::atoi(element.c_str()));
 	}
 	// lijst.print();
+	clock_t start = clock();
 	lijst.sort();
+	clock_t end = clock();
+	std::cout << "Time to process a range of " << lijst.size() << " elements with std::vector: " << static_cast<double>(end - start) / 1000 << " millisec" << std::endl;
 	return 0;
 }
