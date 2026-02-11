@@ -19,18 +19,23 @@ int main (int args, char *argv[])
 	while (iss >> element)
 	{
 		// std::cout << iss << std::endl;
-		std::cout << "elem " << element << std::endl;
+		// std::cout << "elem " << element << std::endl;
 		if (!std::isdigit(element[0]))
 		{
-			std::cout << "put only digits" << std::endl;
+			// std::cout << "put only digits" << std::endl;
 			return 1;
 		}
 		lijst.add(std::atoi(element.c_str()));
 	}
 	// lijst.print();
 	clock_t start = clock();
-	lijst.sort();
+	lijst.sort_deque();
 	clock_t end = clock();
+	std::cout << "Time to process a range of " << lijst.size() << " elements with std::deque: " << static_cast<double>(end - start) / 1000 << " millisec" << std::endl;
+
+	start = clock();
+	lijst.sort_vector();
+	end = clock();
 	std::cout << "Time to process a range of " << lijst.size() << " elements with std::vector: " << static_cast<double>(end - start) / 1000 << " millisec" << std::endl;
 	return 0;
 }

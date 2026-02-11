@@ -14,6 +14,7 @@
 #include <type_traits>
 #include <algorithm>
 
+#define PRINTDEBUG 0
 // using IntOrPair = std::variant<int, std::pair<int, int>>;
 // extern std::vector<IntOrPair> vec;
 
@@ -80,7 +81,17 @@ struct Node {
 		: is_leaf(true), value(v), left(NULL), right(NULL), remaining(false) {}
 
 	Node(const NodePtr& l, const NodePtr& r)
-		: is_leaf(false), value(0), left(l), right(r), remaining(false) {}
+		: is_leaf(false), value(0), left(l), right(r), remaining(false) {
+		// Set value to the non-null child's value
+		if (l && !r) {
+			value = l->value;
+		} else if (r && !l) {
+			value = r->value;
+		} else if (l && r) {
+			// Will be overridden in makeNodePairs
+			value = 0;
+		}
+	}
 };
 
 inline NodePtr makeLeaf(int v) {
@@ -128,6 +139,48 @@ inline void printGroup(const std::vector<NodePtr>& elements)
 	std::cout << std::endl;
 }
 
+
+inline std::deque<NodePtr> makeNodePairs(const std::deque<NodePtr>& elements)
+{
+	std::deque<NodePtr> return_vec;
+	for (size_t i = 0; i < elements.size(); i += 2)
+	{
+		if (i + 1 < elements.size())
+		{
+			NodePtr first = elements[i];
+			NodePtr second = elements[i + 1];
+			first->PairWith = second;
+			second->PairWith = first;
+			if (first->is_leaf && second->is_leaf)
+			{
+				if (PRINTDEBUG) std::cout << "Leaf: " << first->value << " vs " << second->value << std::endl;
+				if (first->value > second->value)
+					std::swap(first, second);
+				if (PRINTDEBUG) std::cout << "biggest leaf: " << second->value << std::endl;
+			}
+			else
+			{
+				if (PRINTDEBUG) std::cout << "Node: " << first->value << " vs " << second->value << std::endl;		
+				if (first->value > second->value)
+					std::swap(first, second);
+				if (PRINTDEBUG) std::cout << "biggest node: " << second->value << std::endl;
+			}
+
+			NodePtr new_node = makePairNode(first, second);
+			new_node->value = second->value; // store
+			return_vec.push_back(new_node);
+		}
+		else
+		{
+			NodePtr new_node = makePairNode(elements[i], NULL);
+			new_node->remaining = true; // mark as remaining
+			return_vec.push_back(new_node);
+
+		}
+	}
+	return return_vec;
+}
+
 inline std::vector<NodePtr> makeNodePairs(const std::vector<NodePtr>& elements)
 {
 	std::vector<NodePtr> return_vec;
@@ -141,17 +194,17 @@ inline std::vector<NodePtr> makeNodePairs(const std::vector<NodePtr>& elements)
 			second->PairWith = first;
 			if (first->is_leaf && second->is_leaf)
 			{
-				std::cout << "Leaf: " << first->value << " vs " << second->value << std::endl;
+				if (PRINTDEBUG) std::cout << "Leaf: " << first->value << " vs " << second->value << std::endl;
 				if (first->value > second->value)
 					std::swap(first, second);
-				std::cout << "biggest leaf: " << second->value << std::endl;
+				if (PRINTDEBUG) std::cout << "biggest leaf: " << second->value << std::endl;
 			}
 			else
 			{
-				std::cout << "Node: " << first->value << " vs " << second->value << std::endl;		
+				if (PRINTDEBUG) std::cout << "Node: " << first->value << " vs " << second->value << std::endl;		
 				if (first->value > second->value)
 					std::swap(first, second);
-				std::cout << "biggest node: " << second->value << std::endl;
+				if (PRINTDEBUG) std::cout << "biggest node: " << second->value << std::endl;
 			}
 
 			NodePtr new_node = makePairNode(first, second);
@@ -179,7 +232,8 @@ public:
 	PmergeMe();
 	~PmergeMe();
 	void makeFirstPairs();
-	void sort();
+	void sort_vector();
+	void sort_deque();
 	void add(int input);
 	size_t size() const;
 	void print();
@@ -199,18 +253,42 @@ void printi(const std::pair<A, B>& p) {
     std::cout << ")";
 }
 
+inline std::deque<NodePtr> makeGroups(const std::deque<NodePtr>& elements)
+{
+	if (elements.size() <= 2) {
+		return elements;
+	}
+	std::deque<NodePtr> pair = makeNodePairs(elements);
+	// printGroup(pair);
+
+	std::deque<NodePtr> groups = makeGroups(pair);
+
+	return groups;
+}
+
 inline std::vector<NodePtr> makeGroups(const std::vector<NodePtr>& elements)
 {
 	if (elements.size() <= 2) {
 		return elements;
 	}
 	std::vector<NodePtr> pair = makeNodePairs(elements);
-	printGroup(pair);
+	// printGroup(pair);
 
 	std::vector<NodePtr> groups = makeGroups(pair);
 
 	return groups;
 }
+
+inline std::deque<NodePtr> makeGroups(std::deque<int>& elements)
+{
+	std::deque<NodePtr> leaves;
+	// leaves.reserve(elements.size());
+	for (size_t i = 0; i < elements.size(); ++i) {
+		leaves.push_back(makeLeaf(elements[i]));
+	}
+	return makeGroups(leaves);
+}
+
 
 inline std::vector<NodePtr> makeGroups(std::vector<int>& elements)
 {
@@ -223,17 +301,29 @@ inline std::vector<NodePtr> makeGroups(std::vector<int>& elements)
 }
 
 
-
-inline void printGroupTree(const std::vector<NodePtr>& groups) {
+inline void printGroupTree(const std::deque<NodePtr>& groups) {
 	if (groups[0]->is_leaf) {
-		std::cout << "Final sorted sequence: ";
-		printGroup(groups);
+		if (PRINTDEBUG) std::cout << "Final sorted sequence: ";
+		if (PRINTDEBUG) printGroup(groups);
 		return;
 	}
 	if (groups[0]->left)
-		printGroupTree({groups[0]->left});
+		printGroupTree(std::deque<NodePtr>{groups[0]->left});
 	if (groups[0]->right)
-		printGroupTree({groups[0]->right});
+		printGroupTree(std::deque<NodePtr>{groups[0]->right});
+}
+
+
+inline void printGroupTree(const std::vector<NodePtr>& groups) {
+	if (groups[0]->is_leaf) {
+		if (PRINTDEBUG) std::cout << "Final sorted sequence: ";
+		if (PRINTDEBUG) printGroup(groups);
+		return;
+	}
+	if (groups[0]->left)
+		printGroupTree(std::vector<NodePtr>{groups[0]->left});
+	if (groups[0]->right)
+		printGroupTree(std::vector<NodePtr>{groups[0]->right});
 }
 
 inline int jacobStallNum(int n) {
@@ -247,15 +337,15 @@ inline std::deque<NodePtr> jacobStallOrder(const std::deque<NodePtr>& groups) {
 
 	order.push_back(groups[0]);
 	size_t previous_index = 0;
-	std::cout << "Jacob-Stall order: " << groups[0]->value << " at index 0" << std::endl;
+	if (PRINTDEBUG) std::cout << "Jacob-Stall order: " << groups[0]->value << " at index 0" << std::endl;
 	for (size_t i = 1; i < groups.size(); ++i)
 	{
-		std::cout << "i = " << i << std::endl;
+		if (PRINTDEBUG) std::cout << "i = " << i << std::endl;
 		size_t index = jacobStallNum(i + 2) - 1;
 		if (index >= groups.size()) index = groups.size() - 1;
 		while (index > previous_index) {
 			if (index < groups.size()) {
-				std::cout << "Jacob-Stall order: " << groups[index]->value << " at index " << index << std::endl;
+				if (PRINTDEBUG) std::cout << "Jacob-Stall order: " << groups[index]->value << " at index " << index << std::endl;
 				order.push_back(groups[index]);
 			}
 			if (index == 0) break;
@@ -272,28 +362,28 @@ inline std::deque<NodePtr> jacobStallOrder(const std::deque<NodePtr>& groups) {
 inline std::vector<NodePtr> jacobStallOrder(const std::vector<NodePtr>& groups) {
 	std::vector<NodePtr> order;
 
-	std::cout << "groups size: " << groups.size() << std::endl;
+	if (PRINTDEBUG) std::cout << "groups size: " << groups.size() << std::endl;
 	if (groups.size() == 0) {
-		std::cout << "No groups to order" << std::endl;
+		if (PRINTDEBUG) std::cout << "No groups to order" << std::endl;
 		return order;
 	}
 	if (groups[0] == NULL) {
-		std::cout << "NULL group at index " << 0 << std::endl;
+		if (PRINTDEBUG) std::cout << "NULL group at index " << 0 << std::endl;
 	}
 	else
 		order.push_back(groups[0]);
 	size_t previous_index = 0;
-	std::cout << "Jacob-Stall order: " << groups[0]->value << " at index 0" << std::endl;
+	if (PRINTDEBUG) std::cout << "Jacob-Stall order: " << groups[0]->value << " at index 0" << std::endl;
 	for (size_t i = 1; i < groups.size(); ++i)
 	{
-		std::cout << "i = " << i << std::endl;
+		if (PRINTDEBUG) std::cout << "i = " << i << std::endl;
 		size_t index = jacobStallNum(i + 2) - 1;
 		if (index >= groups.size()) index = groups.size() - 1;
 		while (index > previous_index) {
 			if (index < groups.size()) {
-				std::cout << "Jacob-Stall order: " << groups[index]->value << " at index " << index << std::endl;
+				if (PRINTDEBUG) std::cout << "Jacob-Stall order: " << groups[index]->value << " at index " << index << std::endl;
 				if (groups[index] == NULL) {
-					std::cout << "NULL group at index " << index << std::endl;
+					if (PRINTDEBUG) std::cout << "NULL group at index " << index << std::endl;
 					if (index == 0) break;
 					index--;
 					continue;
@@ -313,10 +403,10 @@ inline std::vector<NodePtr> jacobStallOrder(const std::vector<NodePtr>& groups) 
 
 
 inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
-	printGroup(groups);
+	if (PRINTDEBUG) printGroup(groups);
 
 	if (groups.size() <= 1) {
-		printGroup(groups);
+		if (PRINTDEBUG) printGroup(groups);
 		std::deque<NodePtr> split_groups;
 		for (unsigned long i = 0; i < groups.size(); ++i) {
 			if (groups[i]->left)
@@ -339,7 +429,7 @@ inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
 			main_sequence.push_back(groups[0]->right);
 		for (unsigned long i = 1; i < groups.size(); ++i) {
 			if (!groups[i]->left || !groups[i]->right) {
-				std::cout << "remaining: " << groups[i]->value << std::endl;
+				if (PRINTDEBUG) std::cout << "remaining: " << groups[i]->value << std::endl;
 				if (groups[i]->left)
 					remaining_sequence.push_back(groups[i]->left);
 				else
@@ -351,15 +441,15 @@ inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
 			if (groups[i]->right)
 				main_sequence.push_back(groups[i]->right);
 		}
-		std::cout << "main sequence: ";
-		printGroup(main_sequence);
-		std::cout << "pending sequence: ";
-		printGroup(pending_sequence);
-		std::cout << "remaining sequence: ";
-		printGroup(remaining_sequence);
+		if (PRINTDEBUG) std::cout << "main sequence: ";
+		if (PRINTDEBUG) printGroup(main_sequence);
+		if (PRINTDEBUG) std::cout << "pending sequence: ";
+		if (PRINTDEBUG) printGroup(pending_sequence);
+		if (PRINTDEBUG) std::cout << "remaining sequence: ";
+		if (PRINTDEBUG) printGroup(remaining_sequence);
 		if (main_sequence[0]->is_leaf) {
 			for (unsigned long i = 0; i < remaining_sequence.size(); ++i) {
-				std::cout << "main sequence leaf: " << remaining_sequence[i]->value << std::endl;
+				if (PRINTDEBUG) std::cout << "main sequence leaf: " << remaining_sequence[i]->value << std::endl;
 				pending_sequence.push_back(remaining_sequence[i]);
 			}
 		}
@@ -373,18 +463,23 @@ inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
 		
 		for (unsigned long i = 0; i < jacobStallOrderedList.size(); ++i) {
 			NodePtr value = jacobStallOrderedList[i];
+			// Skip if PairWith is NULL (unpaired element)
+			if (!value->PairWith) {
+				main_sequence.push_back(value);
+				continue;
+			}
 			// find PairWith in main_sequence and insert value in range before it
 			NodePtr pairWith = value->PairWith;
 			auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
-			std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
+			if (PRINTDEBUG) std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
 			auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
 				return a->value < b->value;
 			});
 			main_sequence.insert(pos, value);
 		}
-		printGroup(main_sequence);
+		if (PRINTDEBUG) printGroup(main_sequence);
 		if (main_sequence[0]->is_leaf) {
-			std::cout << "Final sorted sequence: ";
+			if (PRINTDEBUG) std::cout << "Final sorted sequence: ";
 			printGroup(main_sequence);
 			return;
 		}
@@ -395,10 +490,10 @@ inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
 
 
 inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
-	printGroup(groups);
+	if (PRINTDEBUG) printGroup(groups);
 
 	if (groups.size() <= 1) {
-		printGroup(groups);
+		if (PRINTDEBUG) printGroup(groups);
 		std::vector<NodePtr> split_groups;
 		for (unsigned long i = 0; i < groups.size(); ++i) {
 			if (groups[i]->left)
@@ -421,7 +516,7 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 			main_sequence.push_back(groups[0]->right);
 		for (unsigned long i = 1; i < groups.size(); ++i) {
 			if (!groups[i]->left || !groups[i]->right) {
-				std::cout << "remaining: " << groups[i]->value << std::endl;
+				if (PRINTDEBUG) std::cout << "remaining: " << groups[i]->value << std::endl;
 				if (groups[i]->left)
 					remaining_sequence.push_back(groups[i]->left);
 				else
@@ -433,15 +528,15 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 			if (groups[i]->right)
 				main_sequence.push_back(groups[i]->right);
 		}
-		std::cout << "main sequence: ";
-		printGroup(main_sequence);
-		std::cout << "pending sequence: ";
-		printGroup(pending_sequence);
-		std::cout << "remaining sequence: ";
-		printGroup(remaining_sequence);
+		if (PRINTDEBUG) std::cout << "main sequence: ";
+		if (PRINTDEBUG) printGroup(main_sequence);
+		if (PRINTDEBUG) std::cout << "pending sequence: ";
+		if (PRINTDEBUG) printGroup(pending_sequence);
+		if (PRINTDEBUG) std::cout << "remaining sequence: ";
+		if (PRINTDEBUG) printGroup(remaining_sequence);
 		if (main_sequence[0]->is_leaf) {
 			for (unsigned long i = 0; i < remaining_sequence.size(); ++i) {
-				std::cout << "main sequence leaf: " << remaining_sequence[i]->value << std::endl;
+				if (PRINTDEBUG) std::cout << "remaining sequence leaf goes to pending sequence because its leaf layer: " << remaining_sequence[i]->value << std::endl;
 				pending_sequence.push_back(remaining_sequence[i]);
 			}
 		}
@@ -455,18 +550,23 @@ inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 		
 		for (unsigned long i = 0; i < jacobStallOrderedList.size(); ++i) {
 			NodePtr value = jacobStallOrderedList[i];
+			// Skip if PairWith is NULL (unpaired element)
+			if (!value->PairWith) {
+				main_sequence.push_back(value);
+				continue;
+			}
 			// find PairWith in main_sequence and insert value in range before it
 			NodePtr pairWith = value->PairWith;
 			auto end_bound = std::find(main_sequence.begin(), main_sequence.end(), pairWith);
-			std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
+			if (PRINTDEBUG) std::cout << "inserting " << value->value << " before " << pairWith->value << std::endl;
 			auto pos = std::lower_bound(main_sequence.begin(), end_bound, value, [](const NodePtr& a, const NodePtr& b) {
 				return a->value < b->value;
 			});
 			main_sequence.insert(pos, value);
 		}
-		printGroup(main_sequence);
+		if (PRINTDEBUG) printGroup(main_sequence);
 		if (main_sequence[0]->is_leaf) {
-			std::cout << "Final sorted sequence: ";
+			if (PRINTDEBUG) std::cout << "Final sorted sequence: ";
 			printGroup(main_sequence);
 			return;
 		}

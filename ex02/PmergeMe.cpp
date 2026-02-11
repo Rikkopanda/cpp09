@@ -11,9 +11,18 @@
 PmergeMe::PmergeMe() {}
 PmergeMe::~PmergeMe() {}
 
-void PmergeMe::sort()
+void PmergeMe::sort_vector()
 {
 	auto elements = makeGroups(this->numbers);
+
+	printGroupTree(elements);
+
+	main_pending_insertion_sort(elements);
+}
+
+void PmergeMe::sort_deque()
+{
+	auto elements = makeGroups(this->numbers_deque);
 
 	printGroupTree(elements);
 
