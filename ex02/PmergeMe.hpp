@@ -15,12 +15,8 @@
 #include <algorithm>
 
 #define PRINTDEBUG 0
-// using IntOrPair = std::variant<int, std::pair<int, int>>;
-// extern std::vector<IntOrPair> vec;
 
 void sortInts(std::vector<int>& v);
-// void sortPairsBySecond(std::vector<IntOrPair>& v);
-// void printVec(const std::vector<IntOrPair>& v);
 void printVec(const std::vector<int>& v);
 void make_main_and_pending_sequences(std::vector<int>& main_sequence, std::vector<int>& pending_sequence);
 
@@ -33,16 +29,6 @@ void printVecPair(const std::vector<std::pair<T, T>>& v) {
 		}
 		std::cout << std::endl;
 }
-
-// template<typename T>
-// void printVecPair(const std::vector<T>& v) {
-// 		for (size_t i = 0; i < v.size(); ++i) {
-// 			std::cout << "(" << v[i] ")";
-// 			if (i != v.size() - 1)
-// 				std::cout << ", ";
-// 		}
-// 		std::cout << std::endl;
-// }
 
 template<typename T>
 std::vector<std::pair<T, T>> makePairs(std::vector<T>& elements)
@@ -222,7 +208,6 @@ inline std::vector<NodePtr> makeNodePairs(const std::vector<NodePtr>& elements)
 	return return_vec;
 }
 
-
 class PmergeMe
 {
 private:
@@ -231,6 +216,17 @@ private:
 public:
 	PmergeMe();
 	~PmergeMe();
+	PmergeMe(const PmergeMe& cpy)
+	{
+		this->numbers = cpy.numbers;
+		this->numbers_deque = cpy.numbers_deque;
+	};
+	PmergeMe& operator=(const PmergeMe& cpy)
+	{
+		this->numbers = cpy.numbers;
+		this->numbers_deque = cpy.numbers_deque;
+		return *this;
+	};
 	void makeFirstPairs();
 	void sort_vector();
 	void sort_deque();
@@ -259,8 +255,6 @@ inline std::deque<NodePtr> makeGroups(const std::deque<NodePtr>& elements)
 		return elements;
 	}
 	std::deque<NodePtr> pair = makeNodePairs(elements);
-	// printGroup(pair);
-
 	std::deque<NodePtr> groups = makeGroups(pair);
 
 	return groups;
@@ -272,8 +266,6 @@ inline std::vector<NodePtr> makeGroups(const std::vector<NodePtr>& elements)
 		return elements;
 	}
 	std::vector<NodePtr> pair = makeNodePairs(elements);
-	// printGroup(pair);
-
 	std::vector<NodePtr> groups = makeGroups(pair);
 
 	return groups;
@@ -282,7 +274,6 @@ inline std::vector<NodePtr> makeGroups(const std::vector<NodePtr>& elements)
 inline std::deque<NodePtr> makeGroups(std::deque<int>& elements)
 {
 	std::deque<NodePtr> leaves;
-	// leaves.reserve(elements.size());
 	for (size_t i = 0; i < elements.size(); ++i) {
 		leaves.push_back(makeLeaf(elements[i]));
 	}
@@ -486,8 +477,6 @@ inline void main_pending_insertion_sort(const std::deque<NodePtr>& groups) {
 		main_pending_insertion_sort(main_sequence);
 	}
 }
-
-
 
 inline void main_pending_insertion_sort(const std::vector<NodePtr>& groups) {
 	if (PRINTDEBUG) printGroup(groups);
