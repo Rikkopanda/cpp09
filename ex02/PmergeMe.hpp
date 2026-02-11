@@ -272,6 +272,11 @@ inline std::deque<NodePtr> jacobStallOrder(const std::deque<NodePtr>& groups) {
 inline std::vector<NodePtr> jacobStallOrder(const std::vector<NodePtr>& groups) {
 	std::vector<NodePtr> order;
 
+	std::cout << "groups size: " << groups.size() << std::endl;
+	if (groups.size() == 0) {
+		std::cout << "No groups to order" << std::endl;
+		return order;
+	}
 	if (groups[0] == NULL) {
 		std::cout << "NULL group at index " << 0 << std::endl;
 	}
