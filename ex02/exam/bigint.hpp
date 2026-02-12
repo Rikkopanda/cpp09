@@ -3,7 +3,10 @@
 
 class BigInt
 {
+    private:
+
+    
     public:
-        BigInt();
+        BigInt() {};
 
 };
